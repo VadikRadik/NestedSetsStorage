@@ -3,8 +3,8 @@ package treestorage
 // NestedSetsNode is a tree node
 type NestedSetsNode struct {
 	Name  string
-	left  int
-	right int
+	Left  int
+	Right int
 }
 
 // NestedSetsStorage is an interface for data base table

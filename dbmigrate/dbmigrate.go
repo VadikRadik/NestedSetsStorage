@@ -13,6 +13,28 @@ import (
 const _ATTTEMPTS = 5
 const _ATTTEMPT_INTERVAL = 1000
 
+// Migrate updates data base tables structure
+func Migrate(config *configs.Config) error {
+	db, err := tryToConnect(config)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	queries := []string{
+		`CREATE TABLE IF NOT EXISTS departments
+		(
+			id SERIAL,
+			name VARCHAR(100) NOT NULL UNIQUE,
+			node_left INT NOT NULL,
+			node_right INT NOT NULL,
+			PRIMARY KEY (id)
+		);`,
+	}
+
+	return createTables(db, queries)
+}
+
 func tryToConnect(config *configs.Config) (*sql.DB, error) {
 	var db *sql.DB
 	var err error = nil
@@ -26,16 +48,14 @@ func tryToConnect(config *configs.Config) (*sql.DB, error) {
 	return db, err
 }
 
-func checkErrorForWaitingDb(err error) error {
-	if err == nil {
-		return nil
+func createTables(db *sql.DB, queries []string) error {
+	for _, query := range queries {
+		err := tryQueryExec(db, query)
+		if err != nil {
+			return err
+		}
 	}
-	isWaitingError := strings.Contains(err.Error(), "the database system is starting up") || strings.Contains(err.Error(), "connection reset by peer")
-	if isWaitingError {
-		log.Println("waiting for db")
-		time.Sleep(time.Duration(_ATTTEMPT_INTERVAL) * time.Millisecond)
-	}
-	return err
+	return nil
 }
 
 func tryQueryExec(db *sql.DB, query string) error {
@@ -50,34 +70,14 @@ func tryQueryExec(db *sql.DB, query string) error {
 	return err
 }
 
-func createTables(db *sql.DB, queries []string) error {
-	for _, query := range queries {
-		err := tryQueryExec(db, query)
-		if err != nil {
-			return err
-		}
+func checkErrorForWaitingDb(err error) error {
+	if err == nil {
+		return nil
 	}
-	return nil
-}
-
-// Migrate updates data base tables structure
-func Migrate(config *configs.Config) error {
-	db, err := tryToConnect(config)
-	if err != nil {
-		return err
+	isWaitingError := strings.Contains(err.Error(), "the database system is starting up") || strings.Contains(err.Error(), "connection reset by peer")
+	if isWaitingError {
+		log.Println("waiting for db")
+		time.Sleep(time.Duration(_ATTTEMPT_INTERVAL) * time.Millisecond)
 	}
-	defer db.Close()
-
-	queries := []string{
-		`CREATE TABLE IF NOT EXISTS departments
-		(
-			id SERIAL,
-			name VARCHAR(100) NOT NULL UNIQUE,
-			left_node INT NOT NULL,
-			right_node INT NOT NULL,
-			PRIMARY KEY (id)
-		);`,
-	}
-
-	return createTables(db, queries)
+	return err
 }
