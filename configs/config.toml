@@ -1,0 +1,2 @@
+db_connection_string = "postgres://postgres:storage12tree@localhost:5432?sslmode=disable"
+db_driver = "postgres"

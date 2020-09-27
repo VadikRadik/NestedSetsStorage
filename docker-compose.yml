@@ -1,0 +1,16 @@
+version: "3.3"
+
+services:
+    postgres:
+        image: postgres
+        ports:
+            - 5432:5432
+        environment:
+            POSTGRES_PASSWORD: storage12tree
+
+    nestedsets_storage:
+        build: .
+        network_mode: host
+        depends_on:
+            - postgres
+        command: sh -c "./storage -dbmigrate && go test -v ./... && ./storage"
