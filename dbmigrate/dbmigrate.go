@@ -10,7 +10,7 @@ import (
 	_ "github.com/lib/pq"
 )
 
-const _ATTTEMPTS = 5
+const _ATTTEMPTS = 10
 const _ATTTEMPT_INTERVAL = 1000
 
 // Migrate updates data base tables structure
