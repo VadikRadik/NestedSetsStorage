@@ -6,13 +6,13 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"reflect"
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/BurntSushi/toml"
 	_ "github.com/lib/pq"
+	"github.com/stretchr/testify/assert"
 )
 
 var dbConnectionString string
@@ -28,99 +28,278 @@ func init() {
 	dbDriver = config.DbDriver
 }
 
-func TestAddNode(t *testing.T) {
+func TestNestedSetsStorage_GetParents(t *testing.T) {
 	refillTestData()
+	defaultNodes := createTestNodes()
+
+	type args struct {
+		name string
+	}
+	tests := []struct {
+		name string
+		args args
+		want []treestorage.NestedSetsNode
+	}{
+		// TODO: Add test cases.
+	}
 
 	s := &treestorage.NestedSetsStorage{
 		DbConnectionString: dbConnectionString,
 		DbDriver:           dbDriver,
 	}
 
-	defaultNodes := createTestNodes()
-
-	testCases := []struct {
-		name       string
-		nodeName   string
-		parentName string
-		expected   []treestorage.NestedSetsNode
-	}{
-		{
-			name:       "adding of existing nodes",
-			nodeName:   "Совет лицея",
-			parentName: "Заместитель директора по ВР",
-			expected:   defaultNodes,
-		},
-		{
-			name:       "adding of invalid parent nodes case 1",
-			nodeName:   "Совет лицея",
-			parentName: "Заместитель директора",
-			expected:   defaultNodes,
-		},
-		{
-			name:       "adding of invalid parent nodes case 2",
-			nodeName:   "Совет лицея",
-			parentName: "",
-			expected:   defaultNodes,
-		},
-		{
-			name:       "adding of empty name nodes",
-			nodeName:   "",
-			parentName: "Совет лицея",
-			expected:   defaultNodes,
-		},
-		{
-			name:       "addNodeCase1",
-			nodeName:   "Общешкольный родительский комитет",
-			parentName: "Совет лицея",
-			expected:   addNodeCase1(),
-		},
-		{
-			name:       "addNodeCase2",
-			nodeName:   "Психолог",
-			parentName: "Заместитель директора по ВР",
-			expected:   addNodeCase2(),
-		},
-		{
-			name:       "addNodeCase3",
-			nodeName:   "Общее собрание трудового коллектива",
-			parentName: "Директор",
-			expected:   addNodeCase3(),
-		},
-	}
-
-	for _, test := range testCases {
-		t.Run(test.name, func(t *testing.T) {
-			s.AddNode(test.nodeName, test.parentName)
-			assert.ElementsMatch(t, test.expected, s.GetWholeTree())
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := s.GetParents(tt.args.name); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("NestedSetsStorage.GetParents() = %v, want %v", got, tt.want)
+			}
+			got := s.GetWholeTree()
+			assert.ElementsMatch(t, tt.want, got)
 		})
 	}
 
-	s.AddNode("", "")
 	clearTestDataFromDb()
 }
 
-func TestRemoveNode(t *testing.T) {
+func TestNestedSetsStorage_GetChildren(t *testing.T) {
+	refillTestData()
+	defaultNodes := createTestNodes()
 
+	type args struct {
+		name string
+	}
+	tests := []struct {
+		name string
+		args args
+		want []treestorage.NestedSetsNode
+	}{
+		// TODO: Add test cases.
+	}
+
+	s := &treestorage.NestedSetsStorage{
+		DbConnectionString: dbConnectionString,
+		DbDriver:           dbDriver,
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := s.GetChildren(tt.args.name); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("NestedSetsStorage.GetChildren() = %v, want %v", got, tt.want)
+			}
+			got := s.GetWholeTree()
+			assert.ElementsMatch(t, tt.want, got)
+		})
+	}
+
+	clearTestDataFromDb()
 }
 
-func TestMoveNode(t *testing.T) {
+func TestNestedSetsStorage_GetWholeTree(t *testing.T) {
+	refillTestData()
+	defaultNodes := createTestNodes()
 
+	tests := []struct {
+		name string
+		want []treestorage.NestedSetsNode
+	}{
+		// TODO: Add test cases.
+	}
+
+	s := &treestorage.NestedSetsStorage{
+		DbConnectionString: dbConnectionString,
+		DbDriver:           dbDriver,
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := s.GetWholeTree()
+			assert.ElementsMatch(t, tt.want, got)
+		})
+	}
+
+	clearTestDataFromDb()
 }
 
-func TestRenameNode(t *testing.T) {
+func TestNestedSetsStorage_AddNode(t *testing.T) {
+	refillTestData()
+	defaultNodes := createTestNodes()
 
+	type args struct {
+		name   string
+		parent string
+	}
+	tests := []struct {
+		name string
+		args args
+		want []treestorage.NestedSetsNode
+	}{
+		{
+			name: "adding existing nodes",
+			args: args{"Совет лицея", "Заместитель директора по ВР"},
+			want: defaultNodes,
+		},
+		{
+			name: "adding invalid parent nodes case 1",
+			args: args{"Совет лицея", "Заместитель директора"},
+			want: defaultNodes,
+		},
+		{
+			name: "adding invalid parent nodes case 2",
+			args: args{"Совет лицея", ""},
+			want: defaultNodes,
+		},
+		{
+			name: "adding empty name nodes",
+			args: args{"", "Совет лицея"},
+			want: defaultNodes,
+		},
+		{
+			name: "addNodeCase1",
+			args: args{"Общешкольный родительский комитет", "Совет лицея"},
+			want: addNodeCase1(),
+		},
+		{
+			name: "addNodeCase2",
+			args: args{"Психолог", "Заместитель директора по ВР"},
+			want: addNodeCase2(),
+		},
+		{
+			name: "addNodeCase3",
+			args: args{"Общее собрание трудового коллектива", "Директор"},
+			want: addNodeCase3(),
+		},
+	}
+
+	s := &treestorage.NestedSetsStorage{
+		DbConnectionString: dbConnectionString,
+		DbDriver:           dbDriver,
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s.AddNode(tt.args.name, tt.args.parent)
+			got := s.GetWholeTree()
+			assert.ElementsMatch(t, tt.want, got)
+		})
+	}
+
+	clearTestDataFromDb()
 }
 
-func TestGetParents(t *testing.T) {
+func TestNestedSetsStorage_RemoveNode(t *testing.T) {
+	refillTestData()
+	defaultNodes := createTestNodes()
 
+	type args struct {
+		name string
+	}
+	tests := []struct {
+		name string
+		args args
+		want []treestorage.NestedSetsNode
+	}{
+		{
+			name: "removing not existing nodes",
+			args: args{"Психолог"},
+			want: defaultNodes,
+		},
+		{
+			name: "removing invalid name nodes",
+			args: args{""},
+			want: defaultNodes,
+		},
+		{
+			name: "removeNodeCase1",
+			args: args{"Служба сопровождения"},
+			want: removeNodeCase1(),
+		},
+		{
+			name: "removeNodeCase2",
+			args: args{"Совет лицея"},
+			want: removeNodeCase2(),
+		},
+		{
+			name: "removeNodeCase3",
+			args: args{"Директор"},
+			want: removeNodeCase3(),
+		},
+	}
+
+	s := &treestorage.NestedSetsStorage{
+		DbConnectionString: dbConnectionString,
+		DbDriver:           dbDriver,
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s.RemoveNode(tt.args.name)
+			assert.ElementsMatch(t, tt.want, s.GetWholeTree())
+		})
+	}
+
+	clearTestDataFromDb()
 }
 
-func TestGetChildren(t *testing.T) {
+func TestNestedSetsStorage_MoveNode(t *testing.T) {
+	refillTestData()
+	defaultNodes := createTestNodes()
 
+	type args struct {
+		name      string
+		newParent string
+	}
+	tests := []struct {
+		name string
+		args args
+		want []treestorage.NestedSetsNode
+	}{
+		// TODO: Add test cases.
+	}
+
+	s := &treestorage.NestedSetsStorage{
+		DbConnectionString: dbConnectionString,
+		DbDriver:           dbDriver,
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s.MoveNode(tt.args.name, tt.args.newParent)
+		})
+	}
+
+	clearTestDataFromDb()
 }
 
-func TestGetWholeTree(t *testing.T) {
+func TestNestedSetsStorage_RenameNode(t *testing.T) {
+	refillTestData()
+	defaultNodes := createTestNodes()
 
+	type args struct {
+		name    string
+		newName string
+	}
+	tests := []struct {
+		name string
+		args args
+		want []treestorage.NestedSetsNode
+	}{
+		// TODO: Add test cases.
+	}
+
+	s := &treestorage.NestedSetsStorage{
+		DbConnectionString: dbConnectionString,
+		DbDriver:           dbDriver,
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s.RenameNode(tt.args.name, tt.args.newName)
+			got := s.GetWholeTree()
+			assert.ElementsMatch(t, tt.want, got)
+		})
+	}
+
+	clearTestDataFromDb()
 }
 
 func loadTestDataToDb() {
@@ -244,6 +423,72 @@ func addNodeCase3() []treestorage.NestedSetsNode {
 		{"Кафедры профильного образования", 34, 35},
 		{"Научно-методический совет", 37, 38},
 		{"Общее собрание трудового коллектива", 39, 40},
+	}
+	return nodes
+}
+
+func removeNodeCase1() []treestorage.NestedSetsNode {
+	nodes := []treestorage.NestedSetsNode{
+		{"Директор", 0, 33},
+		{"Заместитель директора по АХЧ", 1, 4},
+		{"Обслуживающий персонал", 2, 3},
+		{"Совет лицея", 5, 12},
+		{"Благотворительный фонд \"Развитие школы\"", 6, 7},
+		{"Ученическое самоуправление", 8, 11},
+		{"Ученики", 9, 10},
+		{"Заместитель директора по информатизации", 13, 16},
+		{"Инженегр по ВТ", 14, 15},
+		{"Заместитель директора по ВР", 17, 22},
+		{"Методическое объединение педагогов дополнительного образования", 18, 19},
+		{"Методическое объединение классных руководителей", 20, 21},
+		{"Бухгалтерия", 23, 24},
+		{"Педагогический совет", 25, 26},
+		{"Заместитель директора по УВР", 27, 30},
+		{"Кафедры профильного образования", 28, 29},
+		{"Научно-методический совет", 31, 32},
+	}
+	return nodes
+}
+
+func removeNodeCase2() []treestorage.NestedSetsNode {
+	nodes := []treestorage.NestedSetsNode{
+		{"Директор", 0, 31},
+		{"Заместитель директора по АХЧ", 1, 4},
+		{"Обслуживающий персонал", 2, 3},
+		{"Благотворительный фонд \"Развитие школы\"", 5, 6},
+		{"Ученическое самоуправление", 7, 10},
+		{"Ученики", 8, 9},
+		{"Заместитель директора по информатизации", 11, 14},
+		{"Инженегр по ВТ", 12, 13},
+		{"Заместитель директора по ВР", 15, 20},
+		{"Методическое объединение педагогов дополнительного образования", 16, 17},
+		{"Методическое объединение классных руководителей", 18, 19},
+		{"Бухгалтерия", 21, 22},
+		{"Педагогический совет", 23, 24},
+		{"Заместитель директора по УВР", 25, 28},
+		{"Кафедры профильного образования", 26, 27},
+		{"Научно-методический совет", 29, 30},
+	}
+	return nodes
+}
+
+func removeNodeCase3() []treestorage.NestedSetsNode {
+	nodes := []treestorage.NestedSetsNode{
+		{"Заместитель директора по АХЧ", 0, 3},
+		{"Обслуживающий персонал", 1, 2},
+		{"Благотворительный фонд \"Развитие школы\"", 4, 5},
+		{"Ученическое самоуправление", 6, 9},
+		{"Ученики", 7, 8},
+		{"Заместитель директора по информатизации", 10, 13},
+		{"Инженегр по ВТ", 11, 12},
+		{"Заместитель директора по ВР", 14, 19},
+		{"Методическое объединение педагогов дополнительного образования", 15, 16},
+		{"Методическое объединение классных руководителей", 17, 18},
+		{"Бухгалтерия", 20, 21},
+		{"Педагогический совет", 22, 23},
+		{"Заместитель директора по УВР", 24, 27},
+		{"Кафедры профильного образования", 25, 26},
+		{"Научно-методический совет", 28, 29},
 	}
 	return nodes
 }
