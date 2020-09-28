@@ -23,6 +23,11 @@ func (s *NestedSetsStorage) GetChildren(name string) []NestedSetsNode {
 	return []NestedSetsNode{}
 }
 
+// GetWholeTree returns all nodes
+func (s *NestedSetsStorage) GetWholeTree() []NestedSetsNode {
+	return []NestedSetsNode{}
+}
+
 // AddNode adds new child node with name name for parent node with name parent
 func (s *NestedSetsStorage) AddNode(name string, parent string) {
 
