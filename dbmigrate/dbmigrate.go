@@ -74,7 +74,7 @@ func checkErrorForWaitingDb(err error) error {
 	if err == nil {
 		return nil
 	}
-	isWaitingError := strings.Contains(err.Error(), "the database system is starting up") || strings.Contains(err.Error(), "connection reset by peer")
+	isWaitingError := strings.Contains(err.Error(), "the database system is starting up") || strings.Contains(err.Error(), "connection reset by peer") || strings.Contains(err.Error(), "EOF")
 	if isWaitingError {
 		log.Println("waiting for db")
 		time.Sleep(time.Duration(_ATTTEMPT_INTERVAL) * time.Millisecond)

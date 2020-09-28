@@ -272,7 +272,8 @@ func TestNestedSetsStorage_RemoveNode(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s.RemoveNode(tt.args.name)
-			assert.ElementsMatch(t, tt.want, s.GetWholeTree())
+			got := s.GetWholeTree()
+			assert.ElementsMatch(t, tt.want, got)
 		})
 	}
 
@@ -292,7 +293,26 @@ func TestNestedSetsStorage_MoveNode(t *testing.T) {
 		args args
 		want []treestorage.NestedSetsNode
 	}{
-		// TODO: Add test cases.
+		{
+			name: "moving invalid node",
+			args: args{"", "Заместитель директора по ВР"},
+			want: defaultNodes,
+		},
+		{
+			name: "moving not existing node",
+			args: args{"Психолог", "Заместитель директора по ВР"},
+			want: defaultNodes,
+		},
+		{
+			name: "moving to invalid parent",
+			args: args{"Заместитель директора по ВР", ""},
+			want: defaultNodes,
+		},
+		{
+			name: "moving to not existing node",
+			args: args{"Заместитель директора по ВР", "Психолог"},
+			want: defaultNodes,
+		},
 	}
 
 	s := &treestorage.NestedSetsStorage{
@@ -303,6 +323,8 @@ func TestNestedSetsStorage_MoveNode(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s.MoveNode(tt.args.name, tt.args.newParent)
+			got := s.GetWholeTree()
+			assert.ElementsMatch(t, tt.want, got)
 		})
 	}
 
@@ -322,7 +344,21 @@ func TestNestedSetsStorage_RenameNode(t *testing.T) {
 		args args
 		want []treestorage.NestedSetsNode
 	}{
-		// TODO: Add test cases.
+		{
+			name: "renaming invalid node",
+			args: args{"", "Заместитель директора"},
+			want: defaultNodes,
+		},
+		{
+			name: "renaming not existing node",
+			args: args{"Психолог", "Заместитель директора"},
+			want: defaultNodes,
+		},
+		{
+			name: "renaming node",
+			args: args{"Заместитель директора по ВР", "Заместитель директора по воспитательной работе"},
+			want: renameNodeCase(),
+		},
 	}
 
 	s := &treestorage.NestedSetsStorage{
@@ -531,6 +567,54 @@ func removeNodeCase3() []treestorage.NestedSetsNode {
 		{"Заместитель директора по УВР", 24, 27},
 		{"Кафедры профильного образования", 25, 26},
 		{"Научно-методический совет", 28, 29},
+	}
+	return nodes
+}
+
+/*func renameNode() []treestorage.NestedSetsNode {
+	nodes := []treestorage.NestedSetsNode{
+		{"Директор", 0, 35},
+		{"Заместитель директора по АХЧ", 1, 4},
+		{"Обслуживающий персонал", 2, 3},
+		{"Совет лицея", 5, 12},
+		{"Благотворительный фонд \"Развитие школы\"", 6, 7},
+		{"Ученическое самоуправление", 8, 11},
+		{"Ученики", 9, 10},
+		{"Заместитель директора по информатизации", 13, 16},
+		{"Инженегр по ВТ", 14, 15},
+		{"Заместитель директора по ВР", 17, 224},
+		{"Служба сопровождения", 18, 19},
+		{"Методическое объединение педагогов дополнительного образования", 20, 21},
+		{"Методическое объединение классных руководителей", 22, 23},
+		{"Бухгалтерия", 25, 26},
+		{"Педагогический совет", 27, 28},
+		{"Заместитель директора по УВР", 29, 32},
+		{"Кафедры профильного образования", 30, 31},
+		{"Научно-методический совет", 33, 34},
+	}
+	return nodes
+}*/
+
+func renameNodeCase() []treestorage.NestedSetsNode {
+	nodes := []treestorage.NestedSetsNode{
+		{"Директор", 0, 35},
+		{"Заместитель директора по АХЧ", 1, 4},
+		{"Обслуживающий персонал", 2, 3},
+		{"Совет лицея", 5, 12},
+		{"Благотворительный фонд \"Развитие школы\"", 6, 7},
+		{"Ученическое самоуправление", 8, 11},
+		{"Ученики", 9, 10},
+		{"Заместитель директора по информатизации", 13, 16},
+		{"Инженегр по ВТ", 14, 15},
+		{"Заместитель директора по воспитательной работе", 17, 224},
+		{"Служба сопровождения", 18, 19},
+		{"Методическое объединение педагогов дополнительного образования", 20, 21},
+		{"Методическое объединение классных руководителей", 22, 23},
+		{"Бухгалтерия", 25, 26},
+		{"Педагогический совет", 27, 28},
+		{"Заместитель директора по УВР", 29, 32},
+		{"Кафедры профильного образования", 30, 31},
+		{"Научно-методический совет", 33, 34},
 	}
 	return nodes
 }

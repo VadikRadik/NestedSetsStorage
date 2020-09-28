@@ -13,4 +13,4 @@ services:
         network_mode: host
         depends_on:
             - postgres
-        command: sh -c "./storage -dbmigrate && go test -v ./... && ./storage"
+        command: sh -c "./storage -dbmigrate && go test ./... && ./storage"
