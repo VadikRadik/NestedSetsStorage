@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"reflect"
 	"strings"
 	"testing"
 
@@ -40,7 +39,26 @@ func TestNestedSetsStorage_GetParents(t *testing.T) {
 		args args
 		want []treestorage.NestedSetsNode
 	}{
-		// TODO: Add test cases.
+		{
+			name: "getting parents for not existing node",
+			args: args{"Заместитель директора"},
+			want: defaultNodes,
+		},
+		{
+			name: "getting parents for invalid name node",
+			args: args{""},
+			want: defaultNodes,
+		},
+		{
+			name: "getting parents for root",
+			args: args{"Директор"},
+			want: []treestorage.NestedSetsNode{},
+		},
+		{
+			name: "getting parents for node",
+			args: args{"Ученики"},
+			want: getParentsCase(),
+		},
 	}
 
 	s := &treestorage.NestedSetsStorage{
@@ -50,10 +68,7 @@ func TestNestedSetsStorage_GetParents(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := s.GetParents(tt.args.name); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NestedSetsStorage.GetParents() = %v, want %v", got, tt.want)
-			}
-			got := s.GetWholeTree()
+			got := s.GetParents(tt.args.name)
 			assert.ElementsMatch(t, tt.want, got)
 		})
 	}
@@ -73,7 +88,31 @@ func TestNestedSetsStorage_GetChildren(t *testing.T) {
 		args args
 		want []treestorage.NestedSetsNode
 	}{
-		// TODO: Add test cases.
+		{
+			name: "getting children for not existing node",
+			args: args{"Заместитель директора"},
+			want: defaultNodes,
+		},
+		{
+			name: "getting children for invalid name node",
+			args: args{""},
+			want: defaultNodes,
+		},
+		{
+			name: "getting children for root",
+			args: args{"Директор"},
+			want: defaultNodes,
+		},
+		{
+			name: "getting children for node without children",
+			args: args{"Бухгалтерия"},
+			want: []treestorage.NestedSetsNode{},
+		},
+		{
+			name: "getting children for node",
+			args: args{"Ученики"},
+			want: getParentsCase(),
+		},
 	}
 
 	s := &treestorage.NestedSetsStorage{
@@ -83,10 +122,7 @@ func TestNestedSetsStorage_GetChildren(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := s.GetChildren(tt.args.name); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NestedSetsStorage.GetChildren() = %v, want %v", got, tt.want)
-			}
-			got := s.GetWholeTree()
+			got := s.GetChildren(tt.args.name)
 			assert.ElementsMatch(t, tt.want, got)
 		})
 	}
@@ -102,7 +138,10 @@ func TestNestedSetsStorage_GetWholeTree(t *testing.T) {
 		name string
 		want []treestorage.NestedSetsNode
 	}{
-		// TODO: Add test cases.
+		{
+			name: "getting whole tree",
+			want: defaultNodes,
+		},
 	}
 
 	s := &treestorage.NestedSetsStorage{
@@ -427,6 +466,7 @@ func addNodeCase3() []treestorage.NestedSetsNode {
 	return nodes
 }
 
+// Removing a node without children
 func removeNodeCase1() []treestorage.NestedSetsNode {
 	nodes := []treestorage.NestedSetsNode{
 		{"Директор", 0, 33},
@@ -450,6 +490,7 @@ func removeNodeCase1() []treestorage.NestedSetsNode {
 	return nodes
 }
 
+// Removing a node with children
 func removeNodeCase2() []treestorage.NestedSetsNode {
 	nodes := []treestorage.NestedSetsNode{
 		{"Директор", 0, 31},
@@ -472,6 +513,7 @@ func removeNodeCase2() []treestorage.NestedSetsNode {
 	return nodes
 }
 
+// Removing a tree root
 func removeNodeCase3() []treestorage.NestedSetsNode {
 	nodes := []treestorage.NestedSetsNode{
 		{"Заместитель директора по АХЧ", 0, 3},
@@ -489,6 +531,15 @@ func removeNodeCase3() []treestorage.NestedSetsNode {
 		{"Заместитель директора по УВР", 24, 27},
 		{"Кафедры профильного образования", 25, 26},
 		{"Научно-методический совет", 28, 29},
+	}
+	return nodes
+}
+
+func getParentsCase() []treestorage.NestedSetsNode {
+	nodes := []treestorage.NestedSetsNode{
+		{"Директор", 0, 35},
+		{"Совет лицея", 5, 12},
+		{"Ученическое самоуправление", 6, 9},
 	}
 	return nodes
 }
