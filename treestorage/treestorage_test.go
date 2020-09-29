@@ -337,6 +337,7 @@ func TestNestedSetsStorage_MoveNode(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			refillTestData()
 			s.MoveNode(tt.args.name, tt.args.newParent)
 			got := s.GetWholeTree()
 			assert.ElementsMatch(t, tt.want, got)
