@@ -21,12 +21,80 @@ type NestedSetsStorage struct {
 
 // GetParents returns parents for the node name
 func (s *NestedSetsStorage) GetParents(name string) []NestedSetsNode {
-	return []NestedSetsNode{}
+	if name == "" {
+		log.Println("invalid node name")
+		return []NestedSetsNode{}
+	}
+
+	db, err := sql.Open(s.DbDriver, s.DbConnectionString)
+	if err != nil {
+		log.Println(err)
+		return []NestedSetsNode{}
+	}
+	defer db.Close()
+
+	query :=
+		`WITH child AS (SELECT ch.name, ch.node_left, ch.node_right FROM departments AS ch WHERE ch.name = $1)
+		SELECT n.name, n.node_left, n.node_right 
+		FROM departments AS n, child 
+		WHERE n.node_left < child.node_left AND n.node_right > child.node_right;`
+	rows, err := db.Query(query, name)
+	if err != nil {
+		log.Println(err)
+		return []NestedSetsNode{}
+	}
+	defer rows.Close()
+
+	var result []NestedSetsNode
+	for rows.Next() {
+		var node NestedSetsNode
+		err := rows.Scan(&node.Name, &node.Left, &node.Right)
+		if err != nil {
+			log.Fatal(err)
+		}
+		result = append(result, node)
+	}
+
+	return result
 }
 
 // GetChildren returns children for the node name
 func (s *NestedSetsStorage) GetChildren(name string) []NestedSetsNode {
-	return []NestedSetsNode{}
+	if name == "" {
+		log.Println("invalid node name")
+		return []NestedSetsNode{}
+	}
+
+	db, err := sql.Open(s.DbDriver, s.DbConnectionString)
+	if err != nil {
+		log.Println(err)
+		return []NestedSetsNode{}
+	}
+	defer db.Close()
+
+	query :=
+		`WITH parent AS (SELECT p.name, p.node_left, p.node_right FROM departments AS p WHERE p.name = $1)
+		SELECT n.name, n.node_left, n.node_right 
+		FROM departments AS n, parent 
+		WHERE n.node_left > parent.node_left AND n.node_right < parent.node_right;`
+	rows, err := db.Query(query, name)
+	if err != nil {
+		log.Println(err)
+		return []NestedSetsNode{}
+	}
+	defer rows.Close()
+
+	var result []NestedSetsNode
+	for rows.Next() {
+		var node NestedSetsNode
+		err := rows.Scan(&node.Name, &node.Left, &node.Right)
+		if err != nil {
+			log.Fatal(err)
+		}
+		result = append(result, node)
+	}
+
+	return result
 }
 
 // GetWholeTree returns all nodes

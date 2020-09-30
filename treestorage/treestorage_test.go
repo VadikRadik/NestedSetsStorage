@@ -29,7 +29,6 @@ func init() {
 
 func TestNestedSetsStorage_GetParents(t *testing.T) {
 	refillTestData()
-	defaultNodes := createTestNodes()
 
 	type args struct {
 		name string
@@ -42,12 +41,12 @@ func TestNestedSetsStorage_GetParents(t *testing.T) {
 		{
 			name: "getting parents for not existing node",
 			args: args{"Заместитель директора"},
-			want: defaultNodes,
+			want: []treestorage.NestedSetsNode{},
 		},
 		{
 			name: "getting parents for invalid name node",
 			args: args{""},
-			want: defaultNodes,
+			want: []treestorage.NestedSetsNode{},
 		},
 		{
 			name: "getting parents for root",
@@ -58,6 +57,11 @@ func TestNestedSetsStorage_GetParents(t *testing.T) {
 			name: "getting parents for node",
 			args: args{"Ученики"},
 			want: getParentsCase(),
+		},
+		{
+			name: "getting parents for node case 2",
+			args: args{"Служба сопровождения"},
+			want: getParentsCase2(),
 		},
 	}
 
@@ -78,7 +82,6 @@ func TestNestedSetsStorage_GetParents(t *testing.T) {
 
 func TestNestedSetsStorage_GetChildren(t *testing.T) {
 	refillTestData()
-	defaultNodes := createTestNodes()
 
 	type args struct {
 		name string
@@ -91,12 +94,12 @@ func TestNestedSetsStorage_GetChildren(t *testing.T) {
 		{
 			name: "getting children for not existing node",
 			args: args{"Заместитель директора"},
-			want: defaultNodes,
+			want: []treestorage.NestedSetsNode{},
 		},
 		{
 			name: "getting children for invalid name node",
 			args: args{""},
-			want: defaultNodes,
+			want: []treestorage.NestedSetsNode{},
 		},
 		{
 			name: "getting children for node without children",
@@ -816,7 +819,15 @@ func getParentsCase() []treestorage.NestedSetsNode {
 	nodes := []treestorage.NestedSetsNode{
 		{"Директор", 0, 35},
 		{"Совет лицея", 5, 12},
-		{"Ученическое самоуправление", 6, 9},
+		{"Ученическое самоуправление", 8, 11},
+	}
+	return nodes
+}
+
+func getParentsCase2() []treestorage.NestedSetsNode {
+	nodes := []treestorage.NestedSetsNode{
+		{"Директор", 0, 35},
+		{"Заместитель директора по ВР", 17, 24},
 	}
 	return nodes
 }
@@ -878,99 +889,3 @@ func createTestNodes() []treestorage.NestedSetsNode {
 	}
 	return nodes
 }
-
-/*func createTestNodes() []treestorage.NestedSetsNode {
-	nodes := []treestorage.NestedSetsNode{
-		{
-			Name:  "Директор",
-			Left:  0,
-			Right: 35,
-		},
-		{
-			Name:  "Заместитель директора по АХЧ",
-			Left:  1,
-			Right: 4,
-		},
-		{
-			Name:  "Обслуживающий персонал",
-			Left:  2,
-			Right: 3,
-		},
-		{
-			Name:  "Совет лицея",
-			Left:  5,
-			Right: 12,
-		},
-		{
-			Name:  "Благотворительный фонд \"Развитие школы\"",
-			Left:  6,
-			Right: 7,
-		},
-		{
-			Name:  "Ученическое самоуправление",
-			Left:  8,
-			Right: 11,
-		},
-		{
-			Name:  "Ученики",
-			Left:  9,
-			Right: 10,
-		},
-		{
-			Name:  "Заместитель директора по информатизации",
-			Left:  13,
-			Right: 16,
-		},
-		{
-			Name:  "Инженегр по ВТ",
-			Left:  14,
-			Right: 15,
-		},
-		{
-			Name:  "Заместитель директора по ВР",
-			Left:  17,
-			Right: 24,
-		},
-		{
-			Name:  "Служба сопровождения",
-			Left:  18,
-			Right: 19,
-		},
-		{
-			Name:  "Методическое объединение педагогов дополнительного образования",
-			Left:  20,
-			Right: 21,
-		},
-		{
-			Name:  "Методическое объединение классных руководителей",
-			Left:  22,
-			Right: 23,
-		},
-		{
-			Name:  "Бухгалтерия",
-			Left:  25,
-			Right: 26,
-		},
-		{
-			Name:  "Педагогический совет",
-			Left:  27,
-			Right: 28,
-		},
-		{
-			Name:  "Заместитель директора по УВР",
-			Left:  29,
-			Right: 32,
-		},
-		{
-			Name:  "Кафедры профильного образования",
-			Left:  30,
-			Right: 31,
-		},
-		{
-			Name:  "Научно-методический совет",
-			Left:  33,
-			Right: 34,
-		},
-	}
-	return nodes
-}*/
