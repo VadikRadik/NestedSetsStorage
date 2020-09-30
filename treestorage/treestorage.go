@@ -3,6 +3,7 @@ package treestorage
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"log"
 )
 
@@ -83,85 +84,98 @@ func (s *NestedSetsStorage) MoveNode(name string, newParent string) error {
 	defer db.Close()
 
 	query := `
-	DO $$ 
 	BEGIN;
+	DO $$ 
 	DECLARE
 		node RECORD;
 		parent RECORD;
-		delta_right INT;
-		delta_left INT;
 	BEGIN
-		SELECT node_left, node_right 
+		SELECT node_left, node_right, name
 		INTO node
-		FROM departmens
+		FROM departments
 		WHERE 
-			name = $1;
+			name = '%s';
 
-		SELECT node_left, node_right 
+		SELECT node_left, node_right, name 
 		INTO parent
-		FROM departmens
+		FROM departments
 		WHERE 
-			name = $2;
+			name = '%s';
 
-		IF node <> NULL and parent <> NULL
-			delta_right := ABS(parent.node_right - node.node_rigt);
-			delta_left := ABS(parent.node_left - node.node_left);
+		IF node IS NOT NULL and parent IS NOT NULL THEN
 
-			IF (delta_left > delta_right)
+			IF node.node_right < parent.node_left THEN
 
-				UPDATE departments 
-				SET node_right = node_right - 1 
-				WHERE node_right > node.node_left AND node_right < node.node_right;
+				PERFORM increase_nodes_left(node.node_left, node.node_right, -1);
+				PERFORM increase_nodes_right(node.node_left, node.node_right, -1);
 
-				UPDATE departments 
-				SET node_left = node_left - 1 
-				WHERE node_left > node.node_left AND node_left < node.node_right;
+				PERFORM increase_nodes_left(node.node_right, parent.node_left + 1, -2);
+				PERFORM increase_nodes_right(node.node_right, parent.node_left + 1, -2);
 
 				UPDATE departments 
-				SET node_right = node_right - 2 
-				WHERE 
-					node_right >= node.node_right AND node_right <= parent.node_right
-				OR
-					node_right >= parent.node_right AND node_right <= node.node_right;
+				SET node_left = parent.node_left - 1,
+				node_right = parent.node_left
+				WHERE name = node.name;
+
+			ELSEIF node.node_left > parent.node_right THEN
+
+				PERFORM increase_nodes_left(node.node_left, node.node_right, 1);
+				PERFORM increase_nodes_right(node.node_left, node.node_right, 1);
+
+				PERFORM increase_nodes_left(parent.node_right - 1, node.node_left, 2);
+				PERFORM increase_nodes_right(parent.node_right - 1, node.node_left, 2);
 
 				UPDATE departments 
-				SET node_left = node_left - 2 
-				WHERE 
-					node_left >= node.node_right AND node_left <= parent.node_right
-				OR 
-					node_left >= parent.node_right AND node_left <= node.node_right;
-				
-			ELSE
+				SET node_left = parent.node_right,
+				node_right = parent.node_right + 1
+				WHERE name = node.name;
+
+			ELSEIF node.node_right < parent.node_right AND node.node_left > parent.node_left THEN
+
+				IF  parent.node_right - node.node_right < node.node_left - parent.node_left THEN
+					PERFORM increase_nodes_left(node.node_left, node.node_right, -1);
+					PERFORM increase_nodes_right(node.node_left, node.node_right, -1);
+
+					PERFORM increase_nodes_left(node.node_right, parent.node_right, -2);
+					PERFORM increase_nodes_right(node.node_right, parent.node_right, -2);
+
+					UPDATE departments 
+					SET node_left = parent.node_right - 2,
+					node_right = parent.node_right - 1
+					WHERE name = node.name;
+				ELSE
+					PERFORM increase_nodes_left(node.node_left, node.node_right, 1);
+					PERFORM increase_nodes_right(node.node_left, node.node_right, 1);
+
+					PERFORM increase_nodes_left(parent.node_left, node.node_left, 2);
+					PERFORM increase_nodes_right(parent.node_left, node.node_left, 2);
+
+					UPDATE departments 
+					SET node_left = parent.node_left + 1,
+					node_right = parent.node_left + 2
+					WHERE name = node.name;
+				END IF;
+
+			ELSEIF parent.node_right < node.node_right AND parent.node_left > node.node_left THEN
+			
+				PERFORM increase_nodes_left(node.node_left, parent.node_left + 1, -1);
+				PERFORM increase_nodes_right(node.node_left, parent.node_left + 1, -1);
+
+				PERFORM increase_nodes_left(parent.node_left, node.node_right, 1);
+				PERFORM increase_nodes_right(parent.node_left, node.node_right, 1);
 
 				UPDATE departments 
-				SET node_right = node_right + 1 
-				WHERE node_right > node.node_left AND node_right < node.node_right;
-
-				UPDATE departments 
-				SET node_left = node_left + 1 
-				WHERE node_left > node.node_left AND node_left < node.node_right;
-
-				UPDATE departments 
-				SET node_right = node_right + 2 
-				WHERE 
-					node_right >= node.node_left AND node_right <= parent.node_left
-				OR
-					node_right >= parent.node_left AND node_right <= node.node_left;
-
-				UPDATE departments 
-				SET node_left = node_left + 2 
-				WHERE 
-					node_left >= node.node_left AND node_left <= parent.node_left
-				OR
-					node_left >= parent.node_left AND node_left <= node.node_left;
+				SET node_left = parent.node_left,
+				node_right = parent.node_left + 1
+				WHERE name = node.name;
 
 			END IF;
+
 		END IF;
+	END $$ LANGUAGE plpgsql;
 	COMMIT;
-	END $$;
-	
 	`
-	_, err = db.Exec(query, name, newParent)
+	_, err = db.Exec(fmt.Sprintf(query, name, newParent))
 	return err
 }
 

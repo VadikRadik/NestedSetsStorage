@@ -314,19 +314,44 @@ func TestNestedSetsStorage_MoveNode(t *testing.T) {
 			want: defaultNodes,
 		},
 		{
-			name: "moving node case 1",
-			args: args{"Педагогический совет", "Заместитель директора по УВР"},
+			name: "not modifying moving",
+			args: args{"Благотворительный фонд \"Развитие школы\"", "Совет лицея"},
+			want: defaultNodes,
+		},
+		{
+			name: "moving node case 1: left direction move to right parent node",
+			args: args{"Педагогический совет", "Заместитель директора по ВР"},
 			want: moveNodeCase1(),
 		},
 		{
-			name: "moving node case 2",
-			args: args{"Совет лицея", "Заместитель директора по УВР"},
+			name: "moving node case 2: right direction move to left parent node",
+			args: args{"Совет лицея", "Заместитель директора по ВР"},
 			want: moveNodeCase2(),
 		},
 		{
-			name: "moving node case 3",
+			name: "moving node case 3: right direction move to left parent node",
 			args: args{"Методическое объединение педагогов дополнительного образования", "Методическое объединение классных руководителей"},
 			want: moveNodeCase3(),
+		},
+		{
+			name: "moving node case 4: left direction move to right parent node",
+			args: args{"Педагогический совет", "Заместитель директора по ВР"},
+			want: moveNodeCase4(),
+		},
+		{
+			name: "moving node case 5: moving down by branch",
+			args: args{"Ученическое самоуправление", "Ученики"},
+			want: moveNodeCase5(),
+		},
+		{
+			name: "moving node case 6: moving inside parent to right node",
+			args: args{"Ученики", "Совет лицея"},
+			want: moveNodeCase6(),
+		},
+		{
+			name: "moving node case 7: moving inside parent to left node",
+			args: args{"Совет лицея", "Директор"},
+			want: moveNodeCase7(),
 		},
 	}
 
@@ -338,7 +363,10 @@ func TestNestedSetsStorage_MoveNode(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			refillTestData()
-			s.MoveNode(tt.args.name, tt.args.newParent)
+			err := s.MoveNode(tt.args.name, tt.args.newParent)
+			if err != nil {
+				log.Println(err)
+			}
 			got := s.GetWholeTree()
 			assert.ElementsMatch(t, tt.want, got)
 		})
@@ -587,7 +615,7 @@ func removeNodeCase3() []treestorage.NestedSetsNode {
 	return nodes
 }
 
-// move node without children to new parent
+// left direction move to right parent node
 func moveNodeCase1() []treestorage.NestedSetsNode {
 	nodes := []treestorage.NestedSetsNode{
 		{"Директор", 0, 35},
@@ -612,7 +640,7 @@ func moveNodeCase1() []treestorage.NestedSetsNode {
 	return nodes
 }
 
-// move node with children to new parent
+// right direction move to left parent node
 func moveNodeCase2() []treestorage.NestedSetsNode {
 	nodes := []treestorage.NestedSetsNode{
 		{"Директор", 0, 35},
@@ -653,6 +681,104 @@ func moveNodeCase3() []treestorage.NestedSetsNode {
 		{"Служба сопровождения", 18, 19},
 		{"Методическое объединение педагогов дополнительного образования", 21, 22},
 		{"Методическое объединение классных руководителей", 20, 23},
+		{"Бухгалтерия", 25, 26},
+		{"Педагогический совет", 27, 28},
+		{"Заместитель директора по УВР", 29, 32},
+		{"Кафедры профильного образования", 30, 31},
+		{"Научно-методический совет", 33, 34},
+	}
+	return nodes
+}
+
+// left moving to right parent node
+func moveNodeCase4() []treestorage.NestedSetsNode {
+	nodes := []treestorage.NestedSetsNode{
+		{"Директор", 0, 35},
+		{"Заместитель директора по АХЧ", 1, 4},
+		{"Обслуживающий персонал", 2, 3},
+		{"Совет лицея", 5, 12},
+		{"Благотворительный фонд \"Развитие школы\"", 6, 7},
+		{"Ученическое самоуправление", 8, 11},
+		{"Ученики", 9, 10},
+		{"Заместитель директора по информатизации", 13, 16},
+		{"Инженегр по ВТ", 14, 15},
+		{"Заместитель директора по ВР", 17, 26},
+		{"Служба сопровождения", 18, 19},
+		{"Методическое объединение педагогов дополнительного образования", 20, 21},
+		{"Методическое объединение классных руководителей", 22, 23},
+		{"Бухгалтерия", 27, 28},
+		{"Педагогический совет", 24, 25},
+		{"Заместитель директора по УВР", 29, 32},
+		{"Кафедры профильного образования", 30, 31},
+		{"Научно-методический совет", 33, 34},
+	}
+	return nodes
+}
+
+// moving down by branch
+func moveNodeCase5() []treestorage.NestedSetsNode {
+	nodes := []treestorage.NestedSetsNode{
+		{"Директор", 0, 35},
+		{"Заместитель директора по АХЧ", 1, 4},
+		{"Обслуживающий персонал", 2, 3},
+		{"Совет лицея", 5, 12},
+		{"Благотворительный фонд \"Развитие школы\"", 6, 7},
+		{"Ученическое самоуправление", 9, 10},
+		{"Ученики", 8, 11},
+		{"Заместитель директора по информатизации", 13, 16},
+		{"Инженегр по ВТ", 14, 15},
+		{"Заместитель директора по ВР", 17, 24},
+		{"Служба сопровождения", 18, 19},
+		{"Методическое объединение педагогов дополнительного образования", 20, 21},
+		{"Методическое объединение классных руководителей", 22, 23},
+		{"Бухгалтерия", 25, 26},
+		{"Педагогический совет", 27, 28},
+		{"Заместитель директора по УВР", 29, 32},
+		{"Кафедры профильного образования", 30, 31},
+		{"Научно-методический совет", 33, 34},
+	}
+	return nodes
+}
+
+func moveNodeCase6() []treestorage.NestedSetsNode {
+	nodes := []treestorage.NestedSetsNode{
+		{"Директор", 0, 35},
+		{"Заместитель директора по АХЧ", 1, 4},
+		{"Обслуживающий персонал", 2, 3},
+		{"Совет лицея", 5, 12},
+		{"Благотворительный фонд \"Развитие школы\"", 6, 7},
+		{"Ученическое самоуправление", 8, 9},
+		{"Ученики", 10, 11},
+		{"Заместитель директора по информатизации", 13, 16},
+		{"Инженегр по ВТ", 14, 15},
+		{"Заместитель директора по ВР", 17, 24},
+		{"Служба сопровождения", 18, 19},
+		{"Методическое объединение педагогов дополнительного образования", 20, 21},
+		{"Методическое объединение классных руководителей", 22, 23},
+		{"Бухгалтерия", 25, 26},
+		{"Педагогический совет", 27, 28},
+		{"Заместитель директора по УВР", 29, 32},
+		{"Кафедры профильного образования", 30, 31},
+		{"Научно-методический совет", 33, 34},
+	}
+	return nodes
+}
+
+func moveNodeCase7() []treestorage.NestedSetsNode {
+	nodes := []treestorage.NestedSetsNode{
+		{"Директор", 0, 35},
+		{"Заместитель директора по АХЧ", 3, 6},
+		{"Обслуживающий персонал", 4, 5},
+		{"Совет лицея", 1, 2},
+		{"Благотворительный фонд \"Развитие школы\"", 7, 8},
+		{"Ученическое самоуправление", 9, 12},
+		{"Ученики", 10, 11},
+		{"Заместитель директора по информатизации", 13, 16},
+		{"Инженегр по ВТ", 14, 15},
+		{"Заместитель директора по ВР", 17, 24},
+		{"Служба сопровождения", 18, 19},
+		{"Методическое объединение педагогов дополнительного образования", 20, 21},
+		{"Методическое объединение классных руководителей", 22, 23},
 		{"Бухгалтерия", 25, 26},
 		{"Педагогический совет", 27, 28},
 		{"Заместитель директора по УВР", 29, 32},
