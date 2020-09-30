@@ -26,7 +26,7 @@ func Migrate(config *configs.Config) error {
 
 func queriesForCreatingDb() []string {
 	queries := []string{
-		`CREATE TABLE IF NOT EXISTS departments
+		`CREATE TABLE IF NOT EXISTS nodes
 		(
 			id SERIAL,
 			name VARCHAR(100) NOT NULL UNIQUE,
@@ -39,7 +39,7 @@ func queriesForCreatingDb() []string {
 		RETURNS VOID AS $$
 		BEGIN
 
-			UPDATE departments 
+			UPDATE nodes 
 			SET node_left = node_left + value
 			WHERE range_start < node_left AND node_left < range_finish;
 
@@ -50,7 +50,7 @@ func queriesForCreatingDb() []string {
 		RETURNS VOID AS $$
 		BEGIN
 
-			UPDATE departments 
+			UPDATE nodes 
 			SET node_right = node_right + value
 			WHERE range_start < node_right AND node_right < range_finish;
 
@@ -65,7 +65,7 @@ func queriesForCreatingDb() []string {
 
 			SELECT node_left, node_right, name
 			INTO node
-			FROM departments
+			FROM nodes
 			WHERE 
 				name = node_name;
 
@@ -74,15 +74,15 @@ func queriesForCreatingDb() []string {
 				PERFORM increase_nodes_left(node.node_left, node.node_right, -1);
 				PERFORM increase_nodes_right(node.node_left, node.node_right, -1);
 
-				UPDATE departments 
+				UPDATE nodes 
 				SET node_left = node_left -2
 				WHERE node_left > node.node_right;
 
-				UPDATE departments 
+				UPDATE nodes 
 				SET node_right = node_right -2
 				WHERE node_right > node.node_right;
 
-				DELETE FROM departments
+				DELETE FROM nodes
 				WHERE name = node.name;
 
 			END IF;
@@ -99,27 +99,27 @@ func queriesForCreatingDb() []string {
 
 			SELECT node_left, node_right
 			INTO parent
-			FROM departments
+			FROM nodes
 			WHERE 
 				name = parent_name;
 
 			SELECT name
 			INTO node
-			FROM departments
+			FROM nodes
 			WHERE 
 				name = node_name;
 
 			IF parent IS NOT NULL AND node IS NULL THEN
 
-				UPDATE departments 
+				UPDATE nodes 
 				SET node_left = node_left +2
 				WHERE node_left >= parent.node_right;
 
-				UPDATE departments 
+				UPDATE nodes 
 				SET node_right = node_right +2
 				WHERE node_right >= parent.node_right;
 
-				INSERT INTO departments
+				INSERT INTO nodes
 				(name, node_left, node_right) 
 				VALUES (node_name, parent.node_right, parent.node_right + 1);
 
@@ -136,18 +136,21 @@ func queriesForCreatingDb() []string {
 		BEGIN
 			SELECT node_left, node_right, name
 			INTO node
-			FROM departments
+			FROM nodes
 			WHERE 
 				name = node_name;
 
 			SELECT node_left, node_right, name 
 			INTO parent
-			FROM departments
+			FROM nodes
 			WHERE 
 				name = parent_name;
 
 			IF node IS NOT NULL and parent IS NOT NULL THEN
 
+				/* * * * * * * * * * * * * * * * * * * *
+				* right moving to the left parent edge
+				* * * * * * * * * * * * * * * * * * * */
 				IF node.node_right < parent.node_left THEN
 
 					PERFORM increase_nodes_left(node.node_left, node.node_right, -1);
@@ -156,11 +159,14 @@ func queriesForCreatingDb() []string {
 					PERFORM increase_nodes_left(node.node_right, parent.node_left + 1, -2);
 					PERFORM increase_nodes_right(node.node_right, parent.node_left + 1, -2);
 
-					UPDATE departments 
+					UPDATE nodes 
 					SET node_left = parent.node_left - 1,
 					node_right = parent.node_left
 					WHERE name = node.name;
 
+				/* * * * * * * * * * * * * * * * * * * *
+				* left moving to the right parent edge
+				* * * * * * * * * * * * * * * * * * * */
 				ELSEIF node.node_left > parent.node_right THEN
 
 					PERFORM increase_nodes_left(node.node_left, node.node_right, 1);
@@ -169,13 +175,17 @@ func queriesForCreatingDb() []string {
 					PERFORM increase_nodes_left(parent.node_right - 1, node.node_left, 2);
 					PERFORM increase_nodes_right(parent.node_right - 1, node.node_left, 2);
 
-					UPDATE departments 
+					UPDATE nodes 
 					SET node_left = parent.node_right,
 					node_right = parent.node_right + 1
 					WHERE name = node.name;
 
+				/* * * * * * * * * * * * * * * * * * * *
+				* up moving along branch
+				* * * * * * * * * * * * * * * * * * * */
 				ELSEIF node.node_right < parent.node_right AND node.node_left > parent.node_left THEN
 
+					-- to the right parent edge (nearest edge)
 					IF  parent.node_right - node.node_right < node.node_left - parent.node_left THEN
 						PERFORM increase_nodes_left(node.node_left, node.node_right, -1);
 						PERFORM increase_nodes_right(node.node_left, node.node_right, -1);
@@ -183,23 +193,26 @@ func queriesForCreatingDb() []string {
 						PERFORM increase_nodes_left(node.node_right, parent.node_right, -2);
 						PERFORM increase_nodes_right(node.node_right, parent.node_right, -2);
 
-						UPDATE departments 
+						UPDATE nodes 
 						SET node_left = parent.node_right - 2,
 						node_right = parent.node_right - 1
 						WHERE name = node.name;
-					ELSE
+					ELSE -- to the left parent edge (nearest edge)
 						PERFORM increase_nodes_left(node.node_left, node.node_right, 1);
 						PERFORM increase_nodes_right(node.node_left, node.node_right, 1);
 
 						PERFORM increase_nodes_left(parent.node_left, node.node_left, 2);
 						PERFORM increase_nodes_right(parent.node_left, node.node_left, 2);
 
-						UPDATE departments 
+						UPDATE nodes 
 						SET node_left = parent.node_left + 1,
 						node_right = parent.node_left + 2
 						WHERE name = node.name;
 					END IF;
 
+				/* * * * * * * * * * * * * * * * * * * *
+				* down moving along branch
+				* * * * * * * * * * * * * * * * * * * */
 				ELSEIF parent.node_right < node.node_right AND parent.node_left > node.node_left THEN
 				
 					PERFORM increase_nodes_left(node.node_left, parent.node_left + 1, -1);
@@ -208,7 +221,7 @@ func queriesForCreatingDb() []string {
 					PERFORM increase_nodes_left(parent.node_left, node.node_right, 1);
 					PERFORM increase_nodes_right(parent.node_left, node.node_right, 1);
 
-					UPDATE departments 
+					UPDATE nodes 
 					SET node_left = parent.node_left,
 					node_right = parent.node_left + 1
 					WHERE name = node.name;
@@ -268,7 +281,7 @@ func checkErrorForWaitingDb(err error) (bool, error) {
 	}
 	isWaitingError := strings.Contains(err.Error(), "the database system is starting up") || strings.Contains(err.Error(), "connection reset by peer") || strings.Contains(err.Error(), "EOF")
 	if isWaitingError {
-		log.Println("waiting for db")
+		log.Println("waiting for the databese")
 		time.Sleep(time.Duration(_ATTTEMPT_INTERVAL) * time.Millisecond)
 	}
 	return isWaitingError, err

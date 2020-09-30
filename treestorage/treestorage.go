@@ -20,78 +20,80 @@ type NestedSetsStorage struct {
 }
 
 // GetParents returns parents for the node name
-func (s *NestedSetsStorage) GetParents(name string) []NestedSetsNode {
+func (s *NestedSetsStorage) GetParents(name string) []string {
 	if name == "" {
 		log.Println("invalid node name")
-		return []NestedSetsNode{}
+		return []string{}
 	}
 
 	db, err := sql.Open(s.DbDriver, s.DbConnectionString)
 	if err != nil {
 		log.Println(err)
-		return []NestedSetsNode{}
+		return []string{}
 	}
 	defer db.Close()
 
 	query :=
-		`WITH child AS (SELECT ch.name, ch.node_left, ch.node_right FROM departments AS ch WHERE ch.name = $1)
-		SELECT n.name, n.node_left, n.node_right 
-		FROM departments AS n, child 
+		`WITH child AS (SELECT ch.node_left, ch.node_right 
+						FROM nodes AS ch WHERE ch.name = $1)
+		SELECT n.name
+		FROM nodes AS n, child 
 		WHERE n.node_left < child.node_left AND n.node_right > child.node_right;`
 	rows, err := db.Query(query, name)
 	if err != nil {
 		log.Println(err)
-		return []NestedSetsNode{}
+		return []string{}
 	}
 	defer rows.Close()
 
-	var result []NestedSetsNode
+	var result []string
 	for rows.Next() {
-		var node NestedSetsNode
-		err := rows.Scan(&node.Name, &node.Left, &node.Right)
+		var nodeName string
+		err := rows.Scan(&nodeName)
 		if err != nil {
 			log.Fatal(err)
 		}
-		result = append(result, node)
+		result = append(result, nodeName)
 	}
 
 	return result
 }
 
 // GetChildren returns children for the node name
-func (s *NestedSetsStorage) GetChildren(name string) []NestedSetsNode {
+func (s *NestedSetsStorage) GetChildren(name string) []string {
 	if name == "" {
 		log.Println("invalid node name")
-		return []NestedSetsNode{}
+		return []string{}
 	}
 
 	db, err := sql.Open(s.DbDriver, s.DbConnectionString)
 	if err != nil {
 		log.Println(err)
-		return []NestedSetsNode{}
+		return []string{}
 	}
 	defer db.Close()
 
 	query :=
-		`WITH parent AS (SELECT p.name, p.node_left, p.node_right FROM departments AS p WHERE p.name = $1)
-		SELECT n.name, n.node_left, n.node_right 
-		FROM departments AS n, parent 
+		`WITH parent AS (SELECT p.node_left, p.node_right 
+						FROM nodes AS p WHERE p.name = $1)
+		SELECT n.name 
+		FROM nodes AS n, parent 
 		WHERE n.node_left > parent.node_left AND n.node_right < parent.node_right;`
 	rows, err := db.Query(query, name)
 	if err != nil {
 		log.Println(err)
-		return []NestedSetsNode{}
+		return []string{}
 	}
 	defer rows.Close()
 
-	var result []NestedSetsNode
+	var result []string
 	for rows.Next() {
-		var node NestedSetsNode
-		err := rows.Scan(&node.Name, &node.Left, &node.Right)
+		var nodeName string
+		err := rows.Scan(&nodeName)
 		if err != nil {
 			log.Fatal(err)
 		}
-		result = append(result, node)
+		result = append(result, nodeName)
 	}
 
 	return result
@@ -107,7 +109,7 @@ func (s *NestedSetsStorage) GetWholeTree() []NestedSetsNode {
 	defer db.Close()
 
 	query := `SELECT name, node_left, node_right
-			  FROM departments;`
+			  FROM nodes;`
 	rows, err := db.Query(query)
 	if err != nil {
 		log.Println(err)
@@ -236,7 +238,7 @@ func (s *NestedSetsStorage) RenameNode(name string, newName string) error {
 	}
 	defer db.Close()
 
-	renameQuery := `UPDATE departments 
+	renameQuery := `UPDATE nodes 
 					SET name = $1 
 					WHERE name = $2;`
 	_, err = db.Exec(renameQuery, newName, name)

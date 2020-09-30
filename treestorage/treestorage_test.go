@@ -36,32 +36,32 @@ func TestNestedSetsStorage_GetParents(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want []treestorage.NestedSetsNode
+		want []string
 	}{
 		{
 			name: "getting parents for not existing node",
 			args: args{"Заместитель директора"},
-			want: []treestorage.NestedSetsNode{},
+			want: []string{},
 		},
 		{
 			name: "getting parents for invalid name node",
 			args: args{""},
-			want: []treestorage.NestedSetsNode{},
+			want: []string{},
 		},
 		{
 			name: "getting parents for root",
 			args: args{"Директор"},
-			want: []treestorage.NestedSetsNode{},
+			want: []string{},
 		},
 		{
 			name: "getting parents for node",
 			args: args{"Ученики"},
-			want: getParentsCase(),
+			want: []string{"Директор", "Совет лицея", "Ученическое самоуправление"},
 		},
 		{
 			name: "getting parents for node case 2",
 			args: args{"Служба сопровождения"},
-			want: getParentsCase2(),
+			want: []string{"Директор", "Заместитель директора по ВР"},
 		},
 	}
 
@@ -89,22 +89,22 @@ func TestNestedSetsStorage_GetChildren(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want []treestorage.NestedSetsNode
+		want []string
 	}{
 		{
 			name: "getting children for not existing node",
 			args: args{"Заместитель директора"},
-			want: []treestorage.NestedSetsNode{},
+			want: []string{},
 		},
 		{
 			name: "getting children for invalid name node",
 			args: args{""},
-			want: []treestorage.NestedSetsNode{},
+			want: []string{},
 		},
 		{
 			name: "getting children for node without children",
 			args: args{"Бухгалтерия"},
-			want: []treestorage.NestedSetsNode{},
+			want: []string{},
 		},
 		{
 			name: "getting children for root",
@@ -114,7 +114,7 @@ func TestNestedSetsStorage_GetChildren(t *testing.T) {
 		{
 			name: "getting children for node",
 			args: args{"Совет лицея"},
-			want: getChildrenCase2(),
+			want: []string{"Благотворительный фонд \"Развитие школы\"", "Ученическое самоуправление", "Ученики"},
 		},
 	}
 
@@ -322,39 +322,44 @@ func TestNestedSetsStorage_MoveNode(t *testing.T) {
 			want: defaultNodes,
 		},
 		{
-			name: "moving node case 1: left direction move to right parent node",
+			name: "moving node case 1: left direction move to the right parent node",
 			args: args{"Педагогический совет", "Заместитель директора по ВР"},
 			want: moveNodeCase1(),
 		},
 		{
-			name: "moving node case 2: right direction move to left parent node",
+			name: "moving node case 2: right direction move to the left parent node",
 			args: args{"Совет лицея", "Заместитель директора по ВР"},
 			want: moveNodeCase2(),
 		},
 		{
-			name: "moving node case 3: right direction move to left parent node",
+			name: "moving node case 3: right direction move to the left parent node",
 			args: args{"Методическое объединение педагогов дополнительного образования", "Методическое объединение классных руководителей"},
 			want: moveNodeCase3(),
 		},
 		{
-			name: "moving node case 4: left direction move to right parent node",
+			name: "moving node case 4: left direction move to hte right parent node",
 			args: args{"Педагогический совет", "Заместитель директора по ВР"},
 			want: moveNodeCase4(),
 		},
 		{
-			name: "moving node case 5: moving down by branch",
+			name: "moving node case 5: moving down along branch",
 			args: args{"Ученическое самоуправление", "Ученики"},
 			want: moveNodeCase5(),
 		},
 		{
-			name: "moving node case 6: moving inside parent to right node",
+			name: "moving node case 6: moving up along branch to the right parent node",
 			args: args{"Ученики", "Совет лицея"},
 			want: moveNodeCase6(),
 		},
 		{
-			name: "moving node case 7: moving inside parent to left node",
+			name: "moving node case 7: moving up along branch to the left parent node",
 			args: args{"Совет лицея", "Директор"},
 			want: moveNodeCase7(),
+		},
+		{
+			name: "moving node case 8: moving down along branch",
+			args: args{"Совет лицея", "Ученики"},
+			want: moveNodeCase8(),
 		},
 	}
 
@@ -434,7 +439,7 @@ func loadTestDataToDb() {
 	defer db.Close()
 
 	fullQuery := `INSERT INTO 
-					departments (name, node_left, node_right) 
+					nodes (name, node_left, node_right) 
 				VALUES 
 					%s;`
 	nodeFields := "('%s', %d, %d)"
@@ -464,13 +469,14 @@ func clearTestDataFromDb() {
 	}
 	defer db.Close()
 
-	query := "DELETE FROM departments;"
+	query := "DELETE FROM nodes;"
 	_, err = db.Exec(query)
 	if err != nil {
 		log.Fatal(err)
 	}
 }
 
+// added "Общешкольный родительский комитет" to "Совет лицея"
 func addNodeCase1() []treestorage.NestedSetsNode {
 	nodes := []treestorage.NestedSetsNode{
 		{"Директор", 0, 37},
@@ -496,6 +502,7 @@ func addNodeCase1() []treestorage.NestedSetsNode {
 	return nodes
 }
 
+// added "Психолог" to "Заместитель директора по ВР"
 func addNodeCase2() []treestorage.NestedSetsNode {
 	nodes := []treestorage.NestedSetsNode{
 		{"Директор", 0, 39},
@@ -522,6 +529,7 @@ func addNodeCase2() []treestorage.NestedSetsNode {
 	return nodes
 }
 
+// added "Общее собрание трудового коллектива" to "Директор"
 func addNodeCase3() []treestorage.NestedSetsNode {
 	nodes := []treestorage.NestedSetsNode{
 		{"Директор", 0, 41},
@@ -549,7 +557,7 @@ func addNodeCase3() []treestorage.NestedSetsNode {
 	return nodes
 }
 
-// Removing a node without children
+// Removing a node without children // removed "Служба сопровождения"
 func removeNodeCase1() []treestorage.NestedSetsNode {
 	nodes := []treestorage.NestedSetsNode{
 		{"Директор", 0, 33},
@@ -573,7 +581,7 @@ func removeNodeCase1() []treestorage.NestedSetsNode {
 	return nodes
 }
 
-// Removing a node with children
+// Removing a node with children // removed "Совет лицея"
 func removeNodeCase2() []treestorage.NestedSetsNode {
 	nodes := []treestorage.NestedSetsNode{
 		{"Директор", 0, 31},
@@ -596,7 +604,7 @@ func removeNodeCase2() []treestorage.NestedSetsNode {
 	return nodes
 }
 
-// Removing a tree root
+// Removing a tree root // removed "Директор"
 func removeNodeCase3() []treestorage.NestedSetsNode {
 	nodes := []treestorage.NestedSetsNode{
 		{"Заместитель директора по АХЧ", 0, 3},
@@ -618,7 +626,7 @@ func removeNodeCase3() []treestorage.NestedSetsNode {
 	return nodes
 }
 
-// left direction move to right parent node
+// left direction move to the right parent node
 func moveNodeCase1() []treestorage.NestedSetsNode {
 	nodes := []treestorage.NestedSetsNode{
 		{"Директор", 0, 35},
@@ -643,7 +651,7 @@ func moveNodeCase1() []treestorage.NestedSetsNode {
 	return nodes
 }
 
-// right direction move to left parent node
+// right direction move to the left parent node
 func moveNodeCase2() []treestorage.NestedSetsNode {
 	nodes := []treestorage.NestedSetsNode{
 		{"Директор", 0, 35},
@@ -693,7 +701,7 @@ func moveNodeCase3() []treestorage.NestedSetsNode {
 	return nodes
 }
 
-// left moving to right parent node
+// left moving to the right parent node
 func moveNodeCase4() []treestorage.NestedSetsNode {
 	nodes := []treestorage.NestedSetsNode{
 		{"Директор", 0, 35},
@@ -718,7 +726,7 @@ func moveNodeCase4() []treestorage.NestedSetsNode {
 	return nodes
 }
 
-// moving down by branch
+// moving down alang branch
 func moveNodeCase5() []treestorage.NestedSetsNode {
 	nodes := []treestorage.NestedSetsNode{
 		{"Директор", 0, 35},
@@ -743,6 +751,7 @@ func moveNodeCase5() []treestorage.NestedSetsNode {
 	return nodes
 }
 
+// moving up along branch to the right parent node
 func moveNodeCase6() []treestorage.NestedSetsNode {
 	nodes := []treestorage.NestedSetsNode{
 		{"Директор", 0, 35},
@@ -767,6 +776,7 @@ func moveNodeCase6() []treestorage.NestedSetsNode {
 	return nodes
 }
 
+// moving up along branch to the left parent node
 func moveNodeCase7() []treestorage.NestedSetsNode {
 	nodes := []treestorage.NestedSetsNode{
 		{"Директор", 0, 35},
@@ -776,6 +786,31 @@ func moveNodeCase7() []treestorage.NestedSetsNode {
 		{"Благотворительный фонд \"Развитие школы\"", 7, 8},
 		{"Ученическое самоуправление", 9, 12},
 		{"Ученики", 10, 11},
+		{"Заместитель директора по информатизации", 13, 16},
+		{"Инженегр по ВТ", 14, 15},
+		{"Заместитель директора по ВР", 17, 24},
+		{"Служба сопровождения", 18, 19},
+		{"Методическое объединение педагогов дополнительного образования", 20, 21},
+		{"Методическое объединение классных руководителей", 22, 23},
+		{"Бухгалтерия", 25, 26},
+		{"Педагогический совет", 27, 28},
+		{"Заместитель директора по УВР", 29, 32},
+		{"Кафедры профильного образования", 30, 31},
+		{"Научно-методический совет", 33, 34},
+	}
+	return nodes
+}
+
+// moving down alnog pranch
+func moveNodeCase8() []treestorage.NestedSetsNode {
+	nodes := []treestorage.NestedSetsNode{
+		{"Директор", 0, 35},
+		{"Заместитель директора по АХЧ", 1, 4},
+		{"Обслуживающий персонал", 2, 3},
+		{"Совет лицея", 9, 10},
+		{"Благотворительный фонд \"Развитие школы\"", 5, 6},
+		{"Ученическое самоуправление", 7, 12},
+		{"Ученики", 8, 11},
 		{"Заместитель директора по информатизации", 13, 16},
 		{"Инженегр по ВТ", 14, 15},
 		{"Заместитель директора по ВР", 17, 24},
@@ -815,53 +850,26 @@ func renameNodeCase() []treestorage.NestedSetsNode {
 	return nodes
 }
 
-func getParentsCase() []treestorage.NestedSetsNode {
-	nodes := []treestorage.NestedSetsNode{
-		{"Директор", 0, 35},
-		{"Совет лицея", 5, 12},
-		{"Ученическое самоуправление", 8, 11},
-	}
-	return nodes
-}
-
-func getParentsCase2() []treestorage.NestedSetsNode {
-	nodes := []treestorage.NestedSetsNode{
-		{"Директор", 0, 35},
-		{"Заместитель директора по ВР", 17, 24},
-	}
-	return nodes
-}
-
 // get children for root
-func getChildrenCase1() []treestorage.NestedSetsNode {
-	nodes := []treestorage.NestedSetsNode{
-		{"Заместитель директора по АХЧ", 1, 4},
-		{"Обслуживающий персонал", 2, 3},
-		{"Совет лицея", 5, 12},
-		{"Благотворительный фонд \"Развитие школы\"", 6, 7},
-		{"Ученическое самоуправление", 8, 11},
-		{"Ученики", 9, 10},
-		{"Заместитель директора по информатизации", 13, 16},
-		{"Инженегр по ВТ", 14, 15},
-		{"Заместитель директора по ВР", 17, 24},
-		{"Служба сопровождения", 18, 19},
-		{"Методическое объединение педагогов дополнительного образования", 20, 21},
-		{"Методическое объединение классных руководителей", 22, 23},
-		{"Бухгалтерия", 25, 26},
-		{"Педагогический совет", 27, 28},
-		{"Заместитель директора по УВР", 29, 32},
-		{"Кафедры профильного образования", 30, 31},
-		{"Научно-методический совет", 33, 34},
-	}
-	return nodes
-}
-
-// get children for node
-func getChildrenCase2() []treestorage.NestedSetsNode {
-	nodes := []treestorage.NestedSetsNode{
-		{"Благотворительный фонд \"Развитие школы\"", 6, 7},
-		{"Ученическое самоуправление", 8, 11},
-		{"Ученики", 9, 10},
+func getChildrenCase1() []string {
+	nodes := []string{
+		"Заместитель директора по АХЧ",
+		"Обслуживающий персонал",
+		"Совет лицея",
+		"Благотворительный фонд \"Развитие школы\"",
+		"Ученическое самоуправление",
+		"Ученики",
+		"Заместитель директора по информатизации",
+		"Инженегр по ВТ",
+		"Заместитель директора по ВР",
+		"Служба сопровождения",
+		"Методическое объединение педагогов дополнительного образования",
+		"Методическое объединение классных руководителей",
+		"Бухгалтерия",
+		"Педагогический совет",
+		"Заместитель директора по УВР",
+		"Кафедры профильного образования",
+		"Научно-методический совет",
 	}
 	return nodes
 }

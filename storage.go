@@ -55,7 +55,7 @@ func clearTestDataFromDb(dbDriver, dbConnectionString string) {
 	}
 	defer db.Close()
 
-	query := "DELETE FROM departments;"
+	query := "DELETE FROM nodes;"
 	_, err = db.Exec(query)
 	if err != nil {
 		log.Fatal(err)
@@ -96,7 +96,7 @@ func loadTestDataToDb(dbDriver, dbConnectionString string) {
 	defer db.Close()
 
 	fullQuery := `INSERT INTO
-					departments (name, node_left, node_right)
+					nodes (name, node_left, node_right)
 				VALUES
 					%s;`
 	nodeFields := "('%s', %d, %d)"
