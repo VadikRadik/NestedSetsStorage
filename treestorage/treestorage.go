@@ -3,7 +3,6 @@ package treestorage
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"log"
 )
 
@@ -62,13 +61,67 @@ func (s *NestedSetsStorage) GetWholeTree() []NestedSetsNode {
 }
 
 // AddNode adds new child node with name name for parent node with name parent
-func (s *NestedSetsStorage) AddNode(name string, parent string) {
+func (s *NestedSetsStorage) AddNode(name string, parent string) error {
+	if name == "" || parent == "" {
+		return errors.New("invalid node name")
+	}
 
+	db, err := sql.Open(s.DbDriver, s.DbConnectionString)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
+	stmt, err := tx.Prepare(`CALL add_node($1, $2);`)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	defer stmt.Close()
+
+	if _, err := stmt.Exec(name, parent); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
 }
 
 // RemoveNode removes node with name name
-func (s *NestedSetsStorage) RemoveNode(name string) {
+func (s *NestedSetsStorage) RemoveNode(name string) error {
+	if name == "" {
+		return errors.New("invalid node name")
+	}
 
+	db, err := sql.Open(s.DbDriver, s.DbConnectionString)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
+	stmt, err := tx.Prepare(`CALL remove_node($1);`)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	defer stmt.Close()
+
+	if _, err := stmt.Exec(name); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
 }
 
 // MoveNode moves node with name name
@@ -83,100 +136,24 @@ func (s *NestedSetsStorage) MoveNode(name string, newParent string) error {
 	}
 	defer db.Close()
 
-	query := `
-	BEGIN;
-	DO $$ 
-	DECLARE
-		node RECORD;
-		parent RECORD;
-	BEGIN
-		SELECT node_left, node_right, name
-		INTO node
-		FROM departments
-		WHERE 
-			name = '%s';
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
 
-		SELECT node_left, node_right, name 
-		INTO parent
-		FROM departments
-		WHERE 
-			name = '%s';
+	stmt, err := tx.Prepare("CALL move_node($1,$2);")
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	defer stmt.Close()
 
-		IF node IS NOT NULL and parent IS NOT NULL THEN
+	if _, err := stmt.Exec(name, newParent); err != nil {
+		tx.Rollback()
+		return err
+	}
 
-			IF node.node_right < parent.node_left THEN
-
-				PERFORM increase_nodes_left(node.node_left, node.node_right, -1);
-				PERFORM increase_nodes_right(node.node_left, node.node_right, -1);
-
-				PERFORM increase_nodes_left(node.node_right, parent.node_left + 1, -2);
-				PERFORM increase_nodes_right(node.node_right, parent.node_left + 1, -2);
-
-				UPDATE departments 
-				SET node_left = parent.node_left - 1,
-				node_right = parent.node_left
-				WHERE name = node.name;
-
-			ELSEIF node.node_left > parent.node_right THEN
-
-				PERFORM increase_nodes_left(node.node_left, node.node_right, 1);
-				PERFORM increase_nodes_right(node.node_left, node.node_right, 1);
-
-				PERFORM increase_nodes_left(parent.node_right - 1, node.node_left, 2);
-				PERFORM increase_nodes_right(parent.node_right - 1, node.node_left, 2);
-
-				UPDATE departments 
-				SET node_left = parent.node_right,
-				node_right = parent.node_right + 1
-				WHERE name = node.name;
-
-			ELSEIF node.node_right < parent.node_right AND node.node_left > parent.node_left THEN
-
-				IF  parent.node_right - node.node_right < node.node_left - parent.node_left THEN
-					PERFORM increase_nodes_left(node.node_left, node.node_right, -1);
-					PERFORM increase_nodes_right(node.node_left, node.node_right, -1);
-
-					PERFORM increase_nodes_left(node.node_right, parent.node_right, -2);
-					PERFORM increase_nodes_right(node.node_right, parent.node_right, -2);
-
-					UPDATE departments 
-					SET node_left = parent.node_right - 2,
-					node_right = parent.node_right - 1
-					WHERE name = node.name;
-				ELSE
-					PERFORM increase_nodes_left(node.node_left, node.node_right, 1);
-					PERFORM increase_nodes_right(node.node_left, node.node_right, 1);
-
-					PERFORM increase_nodes_left(parent.node_left, node.node_left, 2);
-					PERFORM increase_nodes_right(parent.node_left, node.node_left, 2);
-
-					UPDATE departments 
-					SET node_left = parent.node_left + 1,
-					node_right = parent.node_left + 2
-					WHERE name = node.name;
-				END IF;
-
-			ELSEIF parent.node_right < node.node_right AND parent.node_left > node.node_left THEN
-			
-				PERFORM increase_nodes_left(node.node_left, parent.node_left + 1, -1);
-				PERFORM increase_nodes_right(node.node_left, parent.node_left + 1, -1);
-
-				PERFORM increase_nodes_left(parent.node_left, node.node_right, 1);
-				PERFORM increase_nodes_right(parent.node_left, node.node_right, 1);
-
-				UPDATE departments 
-				SET node_left = parent.node_left,
-				node_right = parent.node_left + 1
-				WHERE name = node.name;
-
-			END IF;
-
-		END IF;
-	END $$ LANGUAGE plpgsql;
-	COMMIT;
-	`
-	_, err = db.Exec(fmt.Sprintf(query, name, newParent))
-	return err
+	return tx.Commit()
 }
 
 // RenameNode renames node with name name
