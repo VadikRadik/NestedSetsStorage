@@ -35,6 +35,9 @@ func queriesForCreatingDb() []string {
 			PRIMARY KEY (id)
 		);`,
 
+		`CREATE INDEX IF NOT EXISTS index_left ON nodes (node_left);`,
+		`CREATE INDEX IF NOT EXISTS index_right ON nodes (node_right);`,
+
 		`CREATE OR REPLACE FUNCTION increase_nodes_left ( range_start INT, range_finish INT, value INT) 
 		RETURNS VOID AS $$
 		BEGIN
