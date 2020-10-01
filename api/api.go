@@ -121,7 +121,7 @@ func (s *Server) add() http.HandlerFunc {
 
 		err = s.Storage.AddNode(r.FormValue("name"), r.FormValue("parent"))
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
+			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(err.Error()))
 			return
 		}
@@ -144,7 +144,7 @@ func (s *Server) move() http.HandlerFunc {
 
 		err = s.Storage.MoveNode(r.FormValue("name"), r.FormValue("parent"))
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
+			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(err.Error()))
 			return
 		}
@@ -167,7 +167,7 @@ func (s *Server) remove() http.HandlerFunc {
 
 		err = s.Storage.RemoveNode(r.FormValue("name"))
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
+			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(err.Error()))
 			return
 		}
@@ -190,7 +190,7 @@ func (s *Server) rename() http.HandlerFunc {
 
 		err = s.Storage.RenameNode(r.FormValue("name"), r.FormValue("new_name"))
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
+			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(err.Error()))
 			return
 		}

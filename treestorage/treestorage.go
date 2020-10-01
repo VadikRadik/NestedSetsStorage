@@ -144,16 +144,31 @@ func (s *NestedSetsStorage) AddNode(name string, parent string) error {
 		return err
 	}
 
-	stmt, err := tx.Prepare(`CALL add_node($1, $2);`)
+	stmt, err := tx.Prepare(`SELECT add_node($1, $2);`)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 	defer stmt.Close()
 
-	if _, err := stmt.Exec(name, parent); err != nil {
+	rows, err := stmt.Query(name, parent)
+	if err != nil {
 		tx.Rollback()
 		return err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var result string
+		err := rows.Scan(&result)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+		if result != "" {
+			tx.Rollback()
+			return errors.New(result)
+		}
 	}
 
 	return tx.Commit()
@@ -176,16 +191,31 @@ func (s *NestedSetsStorage) RemoveNode(name string) error {
 		return err
 	}
 
-	stmt, err := tx.Prepare(`CALL remove_node($1);`)
+	stmt, err := tx.Prepare(`SELECT remove_node($1);`)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 	defer stmt.Close()
 
-	if _, err := stmt.Exec(name); err != nil {
+	rows, err := stmt.Query(name)
+	if err != nil {
 		tx.Rollback()
 		return err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var result string
+		err := rows.Scan(&result)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+		if result != "" {
+			tx.Rollback()
+			return errors.New(result)
+		}
 	}
 
 	return tx.Commit()
@@ -208,16 +238,31 @@ func (s *NestedSetsStorage) MoveNode(name string, newParent string) error {
 		return err
 	}
 
-	stmt, err := tx.Prepare("CALL move_node($1,$2);")
+	stmt, err := tx.Prepare("SELECT move_node($1,$2);")
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 	defer stmt.Close()
 
-	if _, err := stmt.Exec(name, newParent); err != nil {
+	rows, err := stmt.Query(name, newParent)
+	if err != nil {
 		tx.Rollback()
 		return err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var result string
+		err := rows.Scan(&result)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+		if result != "" {
+			tx.Rollback()
+			return errors.New(result)
+		}
 	}
 
 	return tx.Commit()
@@ -238,6 +283,18 @@ func (s *NestedSetsStorage) RenameNode(name string, newName string) error {
 	renameQuery := `UPDATE nodes 
 					SET name = $1 
 					WHERE name = $2;`
-	_, err = db.Exec(renameQuery, newName, name)
+	result, err := db.Exec(renameQuery, newName, name)
+	if err != nil {
+		return err
+	}
+
+	count, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if count != 1 {
+		return errors.New("rename failed: node not found")
+	}
+
 	return err
 }

@@ -57,10 +57,11 @@ func queriesForCreatingDb() []string {
 		END;
 		$$  LANGUAGE plpgsql`,
 
-		`CREATE OR REPLACE PROCEDURE remove_node (node_name varchar(100)) 
-		AS $$
+		`CREATE OR REPLACE FUNCTION remove_node (node_name varchar(100)) 
+		RETURNS varchar(50) AS $$
 		DECLARE
 			node RECORD;
+			result varchar(50) := '';
 		BEGIN	
 
 			SELECT node_left, node_right, name
@@ -85,16 +86,20 @@ func queriesForCreatingDb() []string {
 				DELETE FROM nodes
 				WHERE name = node.name;
 
+			ELSE
+				result := 'remove fail: node not found';
 			END IF;
 
+			RETURN result;
 		END;
 		$$  LANGUAGE plpgsql`,
 
-		`CREATE OR REPLACE PROCEDURE add_node (node_name varchar(100), parent_name varchar(100)) 
-		AS $$
+		`CREATE OR REPLACE FUNCTION add_node (node_name varchar(100), parent_name varchar(100)) 
+		RETURNS varchar(50) AS $$
 		DECLARE
 			parent RECORD;
 			node RECORD;
+			result varchar(50) := '';
 		BEGIN	
 
 			SELECT node_left, node_right
@@ -123,16 +128,20 @@ func queriesForCreatingDb() []string {
 				(name, node_left, node_right) 
 				VALUES (node_name, parent.node_right, parent.node_right + 1);
 
+			ELSE
+				result := 'add fail: parent not found or node already exists';
 			END IF;
 
+			RETURN result;
 		END;
 		$$  LANGUAGE plpgsql`,
 
-		`CREATE OR REPLACE PROCEDURE move_node (node_name varchar(100), parent_name varchar(100)) 
-		AS $$
+		`CREATE OR REPLACE FUNCTION move_node (node_name varchar(100), parent_name varchar(100)) 
+		RETURNS varchar(50) AS $$
 		DECLARE
 			node RECORD;
 			parent RECORD;
+			result varchar(50) := '';
 		BEGIN
 			SELECT node_left, node_right, name
 			INTO node
@@ -228,8 +237,11 @@ func queriesForCreatingDb() []string {
 
 				END IF;
 
+			ELSE
+				result := 'move node fail: parent or node not found';
 			END IF;
 
+			RETURN result;
 		END;
 		$$  LANGUAGE plpgsql`,
 	}
