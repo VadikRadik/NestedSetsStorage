@@ -10,8 +10,8 @@ import (
 	_ "github.com/lib/pq"
 )
 
-const _ATTTEMPTS = 10
-const _ATTTEMPT_INTERVAL = 1000
+const _ATTTEMPTS = 10           // times
+const _ATTTEMPT_INTERVAL = 1000 // milliseconds
 
 // Migrate updates data base tables structure
 func Migrate(config *configs.Config) error {

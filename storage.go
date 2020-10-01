@@ -1,10 +1,15 @@
 package main
 
 import (
+	"NestedSetsStorage/api"
 	"NestedSetsStorage/configs"
 	"NestedSetsStorage/dbmigrate"
+	"NestedSetsStorage/treestorage"
+	"database/sql"
 	"flag"
+	"fmt"
 	"log"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 )
@@ -27,23 +32,21 @@ func main() {
 		return
 	}
 
-	/*refillTestData(config.DbDriver, config.DbConnectionSting)
-	s := treestorage.NestedSetsStorage{
+	refillTestData(config.DbDriver, config.DbConnectionSting)
+
+	s := &treestorage.NestedSetsStorage{
 		DbConnectionString: config.DbConnectionSting,
 		DbDriver:           config.DbDriver}
-	log.Println("storage started")
-	for _, node := range s.GetWholeTree() {
-		log.Println(node)
-	}
 
-	db, err := sql.Open(config.DbDriver, config.DbConnectionSting)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()*/
+	//server := &api.Server{config, s}
+	server := new(api.Server)
+	server.Config = config
+	server.Storage = s
+
+	log.Fatal(server.Start())
 }
 
-/*func refillTestData(dbDriver, dbConnectionString string) {
+func refillTestData(dbDriver, dbConnectionString string) {
 	clearTestDataFromDb(dbDriver, dbConnectionString)
 	loadTestDataToDb(dbDriver, dbConnectionString)
 }
@@ -112,4 +115,4 @@ func loadTestDataToDb(dbDriver, dbConnectionString string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-}*/
+}

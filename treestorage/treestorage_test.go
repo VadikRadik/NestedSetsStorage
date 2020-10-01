@@ -72,7 +72,7 @@ func TestNestedSetsStorage_GetParents(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := s.GetParents(tt.args.name)
+			got, _ := s.GetParents(tt.args.name)
 			assert.ElementsMatch(t, tt.want, got)
 		})
 	}
@@ -125,7 +125,7 @@ func TestNestedSetsStorage_GetChildren(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := s.GetChildren(tt.args.name)
+			got, _ := s.GetChildren(tt.args.name)
 			assert.ElementsMatch(t, tt.want, got)
 		})
 	}
@@ -154,7 +154,7 @@ func TestNestedSetsStorage_GetWholeTree(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := s.GetWholeTree()
+			got, _ := s.GetWholeTree()
 			assert.ElementsMatch(t, tt.want, got)
 		})
 	}
@@ -220,7 +220,7 @@ func TestNestedSetsStorage_AddNode(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s.AddNode(tt.args.name, tt.args.parent)
-			got := s.GetWholeTree()
+			got, _ := s.GetWholeTree()
 			assert.ElementsMatch(t, tt.want, got)
 		})
 	}
@@ -275,7 +275,7 @@ func TestNestedSetsStorage_RemoveNode(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s.RemoveNode(tt.args.name)
-			got := s.GetWholeTree()
+			got, _ := s.GetWholeTree()
 			assert.ElementsMatch(t, tt.want, got)
 		})
 	}
@@ -375,7 +375,7 @@ func TestNestedSetsStorage_MoveNode(t *testing.T) {
 			if err != nil {
 				log.Println(err)
 			}
-			got := s.GetWholeTree()
+			got, _ := s.GetWholeTree()
 			assert.ElementsMatch(t, tt.want, got)
 		})
 	}
@@ -421,7 +421,7 @@ func TestNestedSetsStorage_RenameNode(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s.RenameNode(tt.args.name, tt.args.newName)
-			got := s.GetWholeTree()
+			got, _ := s.GetWholeTree()
 			assert.ElementsMatch(t, tt.want, got)
 		})
 	}

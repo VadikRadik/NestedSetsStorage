@@ -1,2 +1,4 @@
 db_connection_string = "postgres://postgres:storage12tree@localhost:5432?sslmode=disable"
 db_driver = "postgres"
+api_port = ":7090"
+api_key = "verysecretword"

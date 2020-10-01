@@ -14,3 +14,5 @@ RUN go mod download
 COPY . .
 
 RUN go build storage.go
+
+EXPOSE 7090

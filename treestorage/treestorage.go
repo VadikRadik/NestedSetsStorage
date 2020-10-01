@@ -20,16 +20,14 @@ type NestedSetsStorage struct {
 }
 
 // GetParents returns parents for the node name
-func (s *NestedSetsStorage) GetParents(name string) []string {
+func (s *NestedSetsStorage) GetParents(name string) ([]string, error) {
 	if name == "" {
-		log.Println("invalid node name")
-		return []string{}
+		return []string{}, errors.New("invalid node name")
 	}
 
 	db, err := sql.Open(s.DbDriver, s.DbConnectionString)
 	if err != nil {
-		log.Println(err)
-		return []string{}
+		return []string{}, err
 	}
 	defer db.Close()
 
@@ -42,7 +40,7 @@ func (s *NestedSetsStorage) GetParents(name string) []string {
 	rows, err := db.Query(query, name)
 	if err != nil {
 		log.Println(err)
-		return []string{}
+		return []string{}, err
 	}
 	defer rows.Close()
 
@@ -51,25 +49,24 @@ func (s *NestedSetsStorage) GetParents(name string) []string {
 		var nodeName string
 		err := rows.Scan(&nodeName)
 		if err != nil {
-			log.Fatal(err)
+			return []string{}, err
 		}
 		result = append(result, nodeName)
 	}
 
-	return result
+	return result, nil
 }
 
 // GetChildren returns children for the node name
-func (s *NestedSetsStorage) GetChildren(name string) []string {
+func (s *NestedSetsStorage) GetChildren(name string) ([]string, error) {
 	if name == "" {
-		log.Println("invalid node name")
-		return []string{}
+		return []string{}, errors.New("invalid node name")
 	}
 
 	db, err := sql.Open(s.DbDriver, s.DbConnectionString)
 	if err != nil {
 		log.Println(err)
-		return []string{}
+		return []string{}, err
 	}
 	defer db.Close()
 
@@ -82,7 +79,7 @@ func (s *NestedSetsStorage) GetChildren(name string) []string {
 	rows, err := db.Query(query, name)
 	if err != nil {
 		log.Println(err)
-		return []string{}
+		return []string{}, err
 	}
 	defer rows.Close()
 
@@ -91,20 +88,20 @@ func (s *NestedSetsStorage) GetChildren(name string) []string {
 		var nodeName string
 		err := rows.Scan(&nodeName)
 		if err != nil {
-			log.Fatal(err)
+			return []string{}, err
 		}
 		result = append(result, nodeName)
 	}
 
-	return result
+	return result, nil
 }
 
 // GetWholeTree returns all nodes
-func (s *NestedSetsStorage) GetWholeTree() []NestedSetsNode {
+func (s *NestedSetsStorage) GetWholeTree() ([]NestedSetsNode, error) {
 	db, err := sql.Open(s.DbDriver, s.DbConnectionString)
 	if err != nil {
 		log.Println(err)
-		return []NestedSetsNode{}
+		return []NestedSetsNode{}, err
 	}
 	defer db.Close()
 
@@ -113,7 +110,7 @@ func (s *NestedSetsStorage) GetWholeTree() []NestedSetsNode {
 	rows, err := db.Query(query)
 	if err != nil {
 		log.Println(err)
-		return []NestedSetsNode{}
+		return []NestedSetsNode{}, err
 	}
 	defer rows.Close()
 
@@ -122,12 +119,12 @@ func (s *NestedSetsStorage) GetWholeTree() []NestedSetsNode {
 		var node NestedSetsNode
 		err := rows.Scan(&node.Name, &node.Left, &node.Right)
 		if err != nil {
-			log.Fatal(err)
+			return []NestedSetsNode{}, err
 		}
 		result = append(result, node)
 	}
 
-	return result
+	return result, nil
 }
 
 // AddNode adds new child node with name name for parent node with name parent

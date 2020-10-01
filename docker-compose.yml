@@ -11,6 +11,8 @@ services:
     nestedsets_storage:
         build: .
         network_mode: host
+        ports:
+            - 7090:7090
         depends_on:
             - postgres
         command: sh -c "./storage -dbmigrate && go test -v ./... && ./storage"
