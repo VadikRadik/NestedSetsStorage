@@ -298,3 +298,44 @@ func (s *NestedSetsStorage) RenameNode(name string, newName string) error {
 
 	return err
 }
+
+// AddRoot adds the first node or creates a new root
+func (s *NestedSetsStorage) AddRoot(name string) error {
+	if name == "" {
+		return errors.New("invalid node name")
+	}
+
+	db, err := sql.Open(s.DbDriver, s.DbConnectionString)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	rootQuery := `WITH max_right AS 
+	(SELECT MAX(m.node_right) AS max_r 
+	FROM nodes AS m), 
+	null_check AS 
+	(SELECT 
+		CASE WHEN max_r IS NOT NULL 
+		THEN max_r ELSE -1 
+		END mx 
+	FROM max_right)
+    INSERT INTO nodes
+	(name, node_left, node_right) 
+	VALUES ($1, (SELECT mx FROM null_check) + 1, (SELECT mx FROM null_check) + 2);`
+
+	result, err := db.Exec(rootQuery, name)
+	if err != nil {
+		return err
+	}
+
+	count, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if count != 1 {
+		return errors.New("add root failde: node already exists")
+	}
+
+	return err
+}

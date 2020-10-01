@@ -429,6 +429,73 @@ func TestNestedSetsStorage_RenameNode(t *testing.T) {
 	clearTestDataFromDb()
 }
 
+func TestNestedSetsStorage_AddRoot(t *testing.T) {
+	refillTestData()
+	defaultNodes := createTestNodes()
+
+	type args struct {
+		name string
+	}
+	tests := []struct {
+		name string
+		args args
+		want []treestorage.NestedSetsNode
+	}{
+		{
+			name: "adding an invalid node",
+			args: args{""},
+			want: defaultNodes,
+		},
+		{
+			name: "adding an existing node",
+			args: args{"Заместитель директора по ВР"},
+			want: defaultNodes,
+		},
+		{
+			name: "adding a node",
+			args: args{"Директор колледжа"},
+			want: addingRootCase(),
+		},
+	}
+
+	s := &treestorage.NestedSetsStorage{
+		DbConnectionString: dbConnectionString,
+		DbDriver:           dbDriver,
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s.AddRoot(tt.args.name)
+			got, _ := s.GetWholeTree()
+			assert.ElementsMatch(t, tt.want, got)
+		})
+	}
+
+	clearTestDataFromDb()
+
+	tests = []struct {
+		name string
+		args args
+		want []treestorage.NestedSetsNode
+	}{
+		{
+			name: "adding to empty tree",
+			args: args{"Директор колледжа"},
+			want: []treestorage.NestedSetsNode{{"Директор колледжа", 0, 1}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s.AddRoot(tt.args.name)
+			got, _ := s.GetWholeTree()
+			assert.ElementsMatch(t, tt.want, got)
+		})
+	}
+
+	clearTestDataFromDb()
+}
+
 func loadTestDataToDb() {
 	nodes := createTestNodes()
 
@@ -870,6 +937,31 @@ func getChildrenCase1() []string {
 		"Заместитель директора по УВР",
 		"Кафедры профильного образования",
 		"Научно-методический совет",
+	}
+	return nodes
+}
+
+func addingRootCase() []treestorage.NestedSetsNode {
+	nodes := []treestorage.NestedSetsNode{
+		{"Директор", 0, 35},
+		{"Заместитель директора по АХЧ", 1, 4},
+		{"Обслуживающий персонал", 2, 3},
+		{"Совет лицея", 5, 12},
+		{"Благотворительный фонд \"Развитие школы\"", 6, 7},
+		{"Ученическое самоуправление", 8, 11},
+		{"Ученики", 9, 10},
+		{"Заместитель директора по информатизации", 13, 16},
+		{"Инженегр по ВТ", 14, 15},
+		{"Заместитель директора по ВР", 17, 24},
+		{"Служба сопровождения", 18, 19},
+		{"Методическое объединение педагогов дополнительного образования", 20, 21},
+		{"Методическое объединение классных руководителей", 22, 23},
+		{"Бухгалтерия", 25, 26},
+		{"Педагогический совет", 27, 28},
+		{"Заместитель директора по УВР", 29, 32},
+		{"Кафедры профильного образования", 30, 31},
+		{"Научно-методический совет", 33, 34},
+		{"Директор колледжа", 36, 37},
 	}
 	return nodes
 }

@@ -25,6 +25,7 @@ func (s *Server) Start() error {
 	http.HandleFunc("/move", s.move())
 	http.HandleFunc("/remove", s.remove())
 	http.HandleFunc("/rename", s.rename())
+	http.HandleFunc("/root", s.root())
 
 	s.apiKeyCache = s.Config.APIKey
 	return http.ListenAndServe(s.Config.APIPort, nil)
@@ -189,6 +190,29 @@ func (s *Server) rename() http.HandlerFunc {
 		}
 
 		err = s.Storage.RenameNode(r.FormValue("name"), r.FormValue("new_name"))
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(err.Error()))
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("ok"))
+	}
+}
+
+func (s *Server) root() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		r.ParseForm()
+		key := r.FormValue("key")
+		err := s.checkKey(key)
+		if err != nil {
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte(err.Error()))
+			return
+		}
+
+		err = s.Storage.AddRoot(r.FormValue("name"))
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(err.Error()))
